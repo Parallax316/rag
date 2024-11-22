@@ -12,7 +12,15 @@ from pdf2image import convert_from_bytes
 from io import BytesIO
 import hashlib  # Import hashlib for hashing
 
+def get_device():
+    if torch.cuda.is_available():
+        return "cuda"
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return "mps"
+    else:
+        return "cpu"
 
+device_map = get_device()
 
 # Function to load the model and processor
 @st.cache_resource
@@ -20,7 +28,7 @@ def load_model():
     model = ColQwen2.from_pretrained(
         "vidore/colqwen2-v0.1",
         torch_dtype=torch.bfloat16,
-        device_map="mps"  # Use "mps" if on Apple Silicon; otherwise, use "cpu" or "cuda"
+        device_map=device_map  # Use "mps" if on Apple Silicon; otherwise, use "cpu" or "cuda"
     )
     
     processor = ColQwen2Processor.from_pretrained("vidore/colqwen2-v0.1")
@@ -61,6 +69,17 @@ def process_and_index_image(image, img_str, image_hash, processor, model):
     c.execute('INSERT INTO embeddings (image_base64, image_hash, embedding) VALUES (?, ?, ?)', (img_str, image_hash, embedding_bytes))
     conn.commit()
     conn.close()
+
+def clear_cache():
+    """Clear GPU memory cache for different platforms."""
+    try:
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+        # CPU doesn't need explicit cache clearing
+    except Exception as e:
+        print(f"Warning: Could not clear cache: {str(e)}")
 
 def main():
     st.title("📷 Image RAG(Colpali + Llama Vision)")
@@ -178,7 +197,7 @@ def main():
                 scores = processor.score_multi_vector(query_embedding_tensor, retrieved_image_embeddings_tensor)
             scores_np = scores.cpu().numpy().flatten()
             del query_embedding_tensor, retrieved_image_embeddings_tensor, scores  # Free up memory
-            torch.mps.empty_cache()
+            clear_cache()
 
             # Combine images and scores
             similarities = list(zip(image_base64_list, scores_np))
@@ -249,7 +268,7 @@ def main():
                 response_container.markdown(complete_response)
 
 
-            torch.mps.empty_cache()
+            clear_cache()
             gc.collect()
 
 if __name__ == "__main__":

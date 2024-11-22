@@ -24,20 +24,45 @@ A powerful Retrieval-Augmented Generation (RAG) system combining Colpali's ColQw
 
 ## ⚡ Quick Start
 
-1. Clone and setup environment:
-```bash
-git clone [repository-url]
-python -m venv venv
-source venv/bin/activate  # For Mac/Linux
-pip install -r requirements.txt
-```
+1. Install Poppler (required for PDF support):
 
-2. Install Ollama from https://ollama.com
+   **Mac:**
+   ```bash
+   brew install poppler
+   ```
 
-3. Launch application:
-```bash
-streamlit run app.py
-```
+   **Windows:**
+   1. Download the latest poppler package from: https://github.com/oschwartz10612/poppler-windows/releases/
+   2. Extract the downloaded zip to a location (e.g., `C:\Program Files\poppler`)
+   3. Add bin directory to PATH:
+      - Open System Properties > Advanced > Environment Variables
+      - Under System Variables, find and select "Path"
+      - Click "Edit" > "New"
+      - Add the bin path (e.g., `C:\Program Files\poppler\bin`)
+   4. Verify installation:
+      ```bash
+      pdftoppm -h
+      ```
+
+2. Clone and setup environment:
+   ```bash
+   git clone https://github.com/kturung/colpali-llama-vision-rag.git
+   python -m venv venv
+   source venv/bin/activate  # For Mac/Linux
+   # or
+   .\venv\Scripts\activate  # For Windows
+   pip install -r requirements.txt
+   ```
+
+3. Install Ollama from https://ollama.com
+
+4. Launch application:
+   ```bash
+   streamlit run app.py
+   ```
+
+> Note: Restart your terminal/IDE after modifying PATH variables
+
 
 ## 💡 Usage
 
