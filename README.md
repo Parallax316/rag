@@ -11,11 +11,36 @@ A powerful Retrieval-Augmented Generation (RAG) system combining Colpali's ColQw
 - 📄 PDF document support
 - 🔍 Semantic similarity search
 - 📊 Efficient SQLite storage
+- 🔄 Microservices architecture for scalability
+
+## 🏗️ Project Structure
+
+The project has been restructured into a microservices architecture:
+
+```
+chatbot_theme_identifier/ 
+├── backend/ 
+│ ├── app/ 
+│ │ ├── api/ - API endpoints
+│ │ ├── core/ - Core functionality (database, memory management)
+│ │ ├── models/ - Model loading and processing
+│ │ ├── services/ - Business logic services
+│ │ ├── main.py - FastAPI application entry point
+│ │ └── config.py - Configuration settings
+│ ├── data/ - Database and data storage
+│ ├── Dockerfile - Docker configuration for backend
+│ └── requirements.txt - Backend dependencies
+├── docs/ - Documentation
+├── tests/ - Test cases
+├── demo/ - Streamlit demo application
+└── README.md - Project documentation
+```
 
 ## 🛠️ Technical Stack
 
 - **Embedding Model**: ColQwen via Colpali
 - **Vision Model**: LLaMA Vision via Ollama
+- **Backend**: FastAPI
 - **Frontend**: Streamlit
 - **Database**: SQLite
 - **Image Processing**: Pillow, pdf2image
@@ -56,8 +81,19 @@ A powerful Retrieval-Augmented Generation (RAG) system combining Colpali's ColQw
 
 3. Install Ollama from https://ollama.com
 
-4. Launch application:
+4. Running the microservices:
+
+   **Backend API:**
    ```bash
+   cd backend
+   pip install -r requirements.txt
+   python -m app.main
+   ```
+
+   **Demo Frontend:**
+   ```bash
+   cd demo
+   pip install -r requirements.txt
    streamlit run app.py
    ```
 
@@ -90,4 +126,81 @@ CREATE TABLE embeddings (
     image_hash TEXT UNIQUE,
     embedding BLOB
 )
+```
+
+## 🔌 API Endpoints
+
+### Backend API
+
+- `POST /index/image` - Index a single image
+  - Input: Image file (multipart/form-data)
+  - Output: JSON with status, message, and image hash
+
+- `POST /index/pdf` - Index a PDF document
+  - Input: PDF file (multipart/form-data)
+  - Output: JSON with status, message, and list of image hashes
+
+- `POST /query` - Query the index with text
+  - Input: query (form field)
+  - Output: JSON with status, image (base64), similarity score, and LLM response
+
+- `GET /` - Root endpoint (health check)
+  - Output: JSON with status message
+
+- `GET /health` - Health check endpoint
+  - Output: JSON with status message
+
+## 🔄 Microservices Communication
+
+The system is designed with a clear separation of concerns:
+
+1. **Frontend-Backend Communication**:
+   - The Streamlit frontend communicates with the FastAPI backend via HTTP requests
+   - API endpoints handle file uploads, queries, and return JSON responses
+
+2. **Internal Service Communication**:
+   - `ImageService`: Handles image processing, embedding generation, and database operations
+   - `LLMService`: Communicates with Ollama to generate responses based on images and queries
+   - `ModelManager`: Manages the ColQwen model for embedding generation
+   - Database layer: Provides persistence for image embeddings
+
+## 🚀 Running the Services
+
+### Backend Service
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the FastAPI server
+python -m app.main
+```
+
+The backend service will start on http://localhost:8000 by default.
+
+### Frontend Demo
+
+```bash
+# Navigate to demo directory
+cd demo
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the Streamlit app
+streamlit run app.py
+```
+
+The Streamlit demo will start on http://localhost:8501 by default.
+
+### Using Docker
+
+```bash
+# Build and run the backend service
+cd backend
+docker build -t image-rag-backend .
+docker run -p 8000:8000 image-rag-backend
 ```
