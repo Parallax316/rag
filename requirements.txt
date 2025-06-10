@@ -1,9 +1,21 @@
-# requirements.txt
-git+https://github.com/illuin-tech/colpali
-streamlit
-torch
-Pillow
+# Unified requirements.txt for Multimodal RAG System
+
+python-dotenv
+pydantic
+fastapi
+uvicorn
+requests
+pillow
 numpy
 pdf2image
-setuptools
-ollama
+python-multipart
+pymongo
+streamlit
+torch
+sentence-transformers
+fitz
+pytesseract
+pytest
+black
+isort
+flake8

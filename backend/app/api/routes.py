@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 import logging
 from ..services.image_service import ImageService
 from ..services.llm_service import LLMService
+from ..utils.health_check import run_full_health_check
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -89,3 +90,21 @@ async def query_index(query: str = Form(...)):
     except Exception as e:
         logger.error(f"Error querying index: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/health/detailed")
+async def detailed_health_check():
+    """
+    Perform detailed health check including model, MongoDB, and GPU tests
+    """
+    try:
+        results = run_full_health_check()
+        return JSONResponse(
+            status_code=200,
+            content=results
+        )
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "failed", "error": str(e)}
+        )

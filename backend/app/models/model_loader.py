@@ -1,5 +1,6 @@
 import torch
 import logging
+import time
 from colpali_engine.models import ColQwen2, ColQwen2Processor
 from ..config import MODEL_NAME, PROCESSOR_NAME, DEVICE_MAP
 from ..core.memory import clear_cache
@@ -50,14 +51,54 @@ class ModelManager:
         Process an image and return its embedding
         """
         try:
+            logger.info("=== Starting model image processing ===")
+            print(f"[MODEL_LOADER] Starting image processing on device: {self._model.device}")
+            
             # Move processing to GPU if available
+            logger.info("Step 1: Processing image with processor...")
+            print(f"[MODEL_LOADER] Step 1: Processing image with processor...")
+            start_time = time.time()
+            
             batch_images = self._processor.process_images([image]).to(self._model.device)
+            
+            process_time = time.time() - start_time
+            logger.info(f"Step 1 Complete: Image processed in {process_time:.2f} seconds")
+            print(f"[MODEL_LOADER] Step 1 Complete: Image processed in {process_time:.2f} seconds")
+            
+            logger.info("Step 2: Generating embeddings with model...")
+            print(f"[MODEL_LOADER] Step 2: Generating embeddings with model...")
+            start_inference = time.time()
+            
             with torch.no_grad():
                 clear_cache() if torch.cuda.is_available() else None  # Clear GPU cache before inference
+                logger.info("GPU cache cleared, running model inference...")
+                print(f"[MODEL_LOADER] Running model inference...")
+                
                 image_embeddings = self._model(**batch_images)
-            return image_embeddings[0].cpu().to(torch.float32).numpy()
+                
+            inference_time = time.time() - start_inference
+            logger.info(f"Step 2 Complete: Model inference completed in {inference_time:.2f} seconds")
+            print(f"[MODEL_LOADER] Step 2 Complete: Model inference completed in {inference_time:.2f} seconds")
+            
+            logger.info("Step 3: Converting embeddings to CPU...")
+            print(f"[MODEL_LOADER] Step 3: Converting embeddings to CPU...")
+            start_convert = time.time()
+            
+            result = image_embeddings[0].cpu().to(torch.float32).numpy()
+            
+            convert_time = time.time() - start_convert
+            total_time = time.time() - start_time
+            logger.info(f"Step 3 Complete: Conversion completed in {convert_time:.2f} seconds")
+            print(f"[MODEL_LOADER] Step 3 Complete: Conversion completed in {convert_time:.2f} seconds")
+            
+            logger.info(f"=== Model processing completed in {total_time:.2f} seconds ===")
+            print(f"[MODEL_LOADER] === Model processing completed in {total_time:.2f} seconds ===")
+            
+            return result
+            
         except Exception as e:
-            logger.error(f"Error processing image: {str(e)}")
+            logger.error(f"Error processing image: {str(e)}", exc_info=True)
+            print(f"[MODEL_LOADER] ERROR: {str(e)}")
             raise
         finally:
             clear_cache()
