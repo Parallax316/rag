@@ -13,7 +13,7 @@ image_service = ImageService()
 llm_service = LLMService()
 
 @router.post("/index/image")
-async def index_image(file: UploadFile = File(...)):
+async def index_image(file: UploadFile = File(...), collection: str = Form("default")):
     """
     Index a single image file
     """
@@ -22,7 +22,7 @@ async def index_image(file: UploadFile = File(...)):
         image_data = await file.read()
         
         # Process the image
-        image_hash = image_service.process_image_file(image_data)
+        image_hash = image_service.process_image_file(image_data, collection)
         
         return JSONResponse(
             status_code=200,
@@ -33,7 +33,7 @@ async def index_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/index/pdf")
-async def index_pdf(file: UploadFile = File(...)):
+async def index_pdf(file: UploadFile = File(...), collection: str = Form("default")):
     """
     Index a PDF file by converting it to images
     """
@@ -46,7 +46,7 @@ async def index_pdf(file: UploadFile = File(...)):
         pdf_data = await file.read()
         
         # Process the PDF
-        image_hashes = image_service.process_pdf_file(pdf_data)
+        image_hashes = image_service.process_pdf_file(pdf_data, collection)
         
         return JSONResponse(
             status_code=200,
@@ -61,13 +61,13 @@ async def index_pdf(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/query")
-async def query_index(query: str = Form(...)):
+async def query_index(query: str = Form(...), collection: str = Form("default")):
     """
-    Query the image index with text
+    Query the image index with text and (optionally) a collection
     """
     try:
         # Query the index
-        image_base64, score = image_service.query_images(query)
+        image_base64, score = image_service.query_images(query, collection)
         
         if not image_base64:
             return JSONResponse(

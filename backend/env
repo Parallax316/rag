@@ -1,0 +1,10 @@
+MONGODB_ATLAS_URI=mongodb+srv://simarpreetsingh4321:simar123@cluster0.7hu3exs.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+MONGODB_ATLAS_DB=rag_multimodal
+MONGODB_EMBEDDINGS_COLLECTION=embeddings
+# Store yourOPENROUTER_API_KEY = "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"
+GEMINI_API_KEY="AIzaSyDsJi9IfJrXROLjlGEST_SzFgTm_sf-JJA"
+OPENROUTER_API_KEY = "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"
+  
+# For example: 
+# OPENAI_API_KEY="your_api_key_here" 
+# GROQ_API_KEY="your_api_key_here" 

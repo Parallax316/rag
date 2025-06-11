@@ -18,7 +18,7 @@ class ImageService:
     def __init__(self):
         self.model_manager = ModelManager()
     
-    def process_image_file(self, image_data):
+    def process_image_file(self, image_data, collection_name="default"):
         """
         Process a single image file
         """
@@ -40,7 +40,7 @@ class ImageService:
             logger.info("Image encoded to base64")
             print(f"[IMAGE_SERVICE] Image encoded to base64")
             # Process and index the image
-            self.process_and_index_image(image, img_str, image_hash)
+            self.process_and_index_image(image, img_str, image_hash, collection_name)
             logger.info("Image processed and indexed")
             print(f"[IMAGE_SERVICE] Image processed and indexed")
             return image_hash
@@ -49,7 +49,7 @@ class ImageService:
             print(f"[IMAGE_SERVICE] Error processing image file: {str(e)}")
             raise
 
-    def process_pdf_file(self, pdf_data):
+    def process_pdf_file(self, pdf_data, collection_name="default"):
         """
         Process a PDF file by converting it to images
         """
@@ -72,7 +72,7 @@ class ImageService:
                 logger.info(f"Page {j+1} hash: {image_hash}")
                 print(f"[IMAGE_SERVICE] Page {j+1} hash: {image_hash}")
                 # Process and index the image
-                self.process_and_index_image(image, img_str, image_hash)
+                self.process_and_index_image(image, img_str, image_hash, collection_name)
                 logger.info(f"Page {j+1} processed and indexed")
                 print(f"[IMAGE_SERVICE] Page {j+1} processed and indexed")
                 image_hashes.append(image_hash)
@@ -84,7 +84,7 @@ class ImageService:
             print(f"[IMAGE_SERVICE] Error processing PDF file: {str(e)}")
             raise
 
-    def process_and_index_image(self, image, img_str, image_hash):
+    def process_and_index_image(self, image, img_str, image_hash, collection_name="default"):
         """
         Process an image and store its embedding in MongoDB Atlas
         """
@@ -107,7 +107,7 @@ class ImageService:
             logger.info("Step 2: Preparing MongoDB document...")
             print(f"[IMAGE_SERVICE] Step 2: Preparing MongoDB document...")
             doc = {
-                "collection_name": "default",  # Or pass as parameter
+                "collection_name": collection_name,
                 "type": "image",
                 "embedding": image_embedding.tolist(),
                 "data": {
@@ -140,33 +140,52 @@ class ImageService:
         finally:
             clear_cache()
 
-    def query_images(self, query_text):
+    def query_images(self, query_text, collection_name="default"):
         """
         Query the image database with text (now using MongoDB Atlas)
         """
         try:
             # Process query to get embedding
+            logger.info("Processing query embedding...")
+            print(f"[IMAGE_SERVICE] Processing query embedding...")
             query_embedding = self.model_manager.process_query(query_text)
+            
             # Retrieve image embeddings from MongoDB
-            logger.info("Retrieving image embeddings from MongoDB Atlas")
-            print(f"[IMAGE_SERVICE] Retrieving image embeddings from MongoDB Atlas")
-            results = find_embeddings({"type": "image"})
+            logger.info(f"Retrieving image embeddings from MongoDB Atlas for collection: {collection_name}")
+            print(f"[IMAGE_SERVICE] Retrieving image embeddings from MongoDB Atlas for collection: {collection_name}")
+            
+            query_filter = {"type": "image", "collection_name": collection_name}
+            results = find_embeddings(query_filter)
+            
             if not results:
-                logger.warning("No images found in the index")
-                print(f"[IMAGE_SERVICE] No images found in the index")
+                logger.warning(f"No images found in collection: {collection_name}")
+                print(f"[IMAGE_SERVICE] No images found in collection: {collection_name}")
                 return None, None
-            # Compute similarity (naive, for demo)
-            import numpy as np
-            scores = []
+            
+            # Use proper ColQwen2 similarity computation
+            logger.info(f"Computing similarity scores for {len(results)} images...")
+            print(f"[IMAGE_SERVICE] Computing similarity scores for {len(results)} images...")
+            
+            # Prepare image embeddings array
+            image_embeddings = []
             for doc in results:
                 emb = np.array(doc["embedding"])
-                score = np.dot(query_embedding.flatten(), emb.flatten()) / (np.linalg.norm(query_embedding.flatten()) * np.linalg.norm(emb.flatten()))
-                scores.append(score)
-            if scores:
+                image_embeddings.append(emb)
+            
+            # Stack image embeddings
+            image_embeddings_array = np.stack(image_embeddings)
+            
+            # Use the model's compute_similarity method
+            scores = self.model_manager.compute_similarity(query_embedding, image_embeddings_array)
+            
+            if len(scores) > 0:
                 top_idx = int(np.argmax(scores))
+                logger.info(f"Top score: {scores[top_idx]:.4f}")
+                print(f"[IMAGE_SERVICE] Top score: {scores[top_idx]:.4f}")
                 return results[top_idx]["data"]["image_base64"], float(scores[top_idx])
             else:
                 return None, None
+                
         except Exception as e:
             logger.error(f"Error querying images: {str(e)}")
             print(f"[IMAGE_SERVICE] Error querying images: {str(e)}")

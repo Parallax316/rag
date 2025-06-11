@@ -126,10 +126,16 @@ class ModelManager:
         Compute similarity between query and image embeddings
         """
         try:
-            # Convert to tensors and move to appropriate device
+            # Convert to tensors with consistent data types and move to appropriate device
             logger.info(f"Moving tensors to device: {self._model.device}")
-            query_embedding_tensor = torch.from_numpy(query_embedding).to(self._model.device).unsqueeze(0)
-            image_embeddings_tensor = torch.from_numpy(image_embeddings).to(self._model.device)
+            
+            # Ensure consistent float32 data type
+            query_embedding_tensor = torch.from_numpy(query_embedding).float().to(self._model.device).unsqueeze(0)
+            image_embeddings_tensor = torch.from_numpy(image_embeddings).float().to(self._model.device)
+
+            # Log tensor shapes and types for debugging
+            logger.info(f"Query tensor shape: {query_embedding_tensor.shape}, dtype: {query_embedding_tensor.dtype}")
+            logger.info(f"Image embeddings tensor shape: {image_embeddings_tensor.shape}, dtype: {image_embeddings_tensor.dtype}")
 
             # Compute similarity scores
             logger.info("Computing similarity scores between query and images")

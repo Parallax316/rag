@@ -11,7 +11,7 @@ DATABASE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data',
 
 # Model settings
 MODEL_NAME = "vidore/colqwen2-v0.1"
-PROCESSOR_NAME = "vidore/colqwen2.5-v0.2"
+PROCESSOR_NAME = "vidore/colqwen2-v0.1"  # Use matching version
 
 # Device settings
 def get_device():
