@@ -160,7 +160,7 @@ class ImageService:
             if not results:
                 logger.warning(f"No images found in collection: {collection_name}")
                 print(f"[IMAGE_SERVICE] No images found in collection: {collection_name}")
-                return None, None
+                return []
             
             # Use proper ColQwen2 similarity computation
             logger.info(f"Computing similarity scores for {len(results)} images...")
@@ -179,12 +179,20 @@ class ImageService:
             scores = self.model_manager.compute_similarity(query_embedding, image_embeddings_array)
             
             if len(scores) > 0:
-                top_idx = int(np.argmax(scores))
-                logger.info(f"Top score: {scores[top_idx]:.4f}")
-                print(f"[IMAGE_SERVICE] Top score: {scores[top_idx]:.4f}")
-                return results[top_idx]["data"]["image_base64"], float(scores[top_idx])
+                # Get top 3 results
+                top_k = min(3, len(scores))
+                top_indices = np.argsort(scores)[::-1][:top_k]
+                top_images = []
+                for idx in top_indices:
+                    top_images.append({
+                        "image_base64": results[idx]["data"]["image_base64"],
+                        "score": float(scores[idx])
+                    })
+                logger.info(f"Top {top_k} scores: {[img['score'] for img in top_images]}")
+                print(f"[IMAGE_SERVICE] Top {top_k} scores: {[img['score'] for img in top_images]}")
+                return top_images
             else:
-                return None, None
+                return []
                 
         except Exception as e:
             logger.error(f"Error querying images: {str(e)}")

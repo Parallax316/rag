@@ -63,28 +63,26 @@ async def index_pdf(file: UploadFile = File(...), collection: str = Form("defaul
 @router.post("/query")
 async def query_index(query: str = Form(...), collection: str = Form("default")):
     """
-    Query the image index with text and (optionally) a collection
+    Query the image index with text and return image data for orchestrator processing
     """
     try:
         # Query the index
-        image_base64, score = image_service.query_images(query, collection)
+        images = image_service.query_images(query, collection)
         
-        if not image_base64:
+        if not images:
             return JSONResponse(
                 status_code=404,
                 content={"status": "error", "message": "No images found in the index"}
             )
         
-        # Generate LLM response
-        llm_response = llm_service.generate_response(query, image_base64)
-        
+        # Return image data and query for orchestrator to process with local Ollama
         return JSONResponse(
             status_code=200,
             content={
                 "status": "success",
-                "image": image_base64,
-                "similarity_score": float(score),
-                "response": llm_response
+                "images": images,
+                "query": query,
+                "collection": collection
             }
         )
     except Exception as e:
